@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<!-- saved from url=(0016)http://localhost -->
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>웹뷰</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    
+    <script type="text/javascript">
+        function ReceiveMessage(msg) {
+            alert(msg);
+        }
+
+        function WhatTimeIsItNow() {
+            var t = new Date();
+            alert(t);
+        }
+
+        // 네이티브에게 메시지 전달
+        function SendMessageToNative(msg) {
+
+            // 네이티브 메소드 호출
+            window.external.MessageFromJavaScript(msg);
+        }
+
+        // 네이티브에게 계산 결과 전달
+        function Calculate(cmd, a, b) {
+            var res;
+
+            document.getElementById("inputA").value = a;
+            document.getElementById("inputB").value = b;
+
+            if (cmd == 0)
+                res = Number(a) + Number(b);
+            else if (cmd == 1)
+                res = Number(a) - Number(b);
+            else if (cmd == 2)
+                res = Number(a) * Number(b);
+            else
+                res = Number(a) / Number(b);
+
+            document.getElementById("output").value = res;
+
+            SendMessageToNative("Calculate Completed.");
+            return res;
+        }
+
+        function SendParametersUsingURL(cmd) {
+            var param1 = document.getElementById("inputA").value;
+            var param2 = document.getElementById("inputB").value;
+
+            url = "calc:///C:/Users/NHN/source/repos/WpfApp1/page1.html?op=" + cmd + "?param1=" + param1 + "?param2=" + param2;
+            ChangeURL(url);
+        }
+
+        // ChangeURL function must be called when you change url from javascript.
+        function ChangeURL(url) {
+            // 네이티브에게 '자바스크립트에서 url 변경할게'라고 알린 뒤 url 변경 -> 네이티브에서 url 변경 이벤트 핸들러를 등록시키게 됨.
+            window.external.UrlChangingFromJavaScript();
+            window.location = url;
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>JavaScript 함수</h2>
+
+        <h3>계산기</h3>
+        <label for="inputA">WebView Input1</label>
+        <input id="inputA">
+        <label for="inputB">WebView Input2</label>
+        <input id="inputB">
+        <br />
+        <label for="output">WebView Output</label>
+        <textarea id="output"></textarea>
+
+        <br /><br />
+        <h3>Native 메시지 호출</h3>
+        입력할 메시지:
+        <input id="message1" /> &nbsp;&nbsp;
+        <button class="btn btn-primary" id="test1" onclick="SendMessageToNative(message1.value);">Send Message to Native</button>
+
+        <br /><br />
+        <h3>JavaScript alert 호출</h3>
+        <button class="btn btn-success" id="test2" onclick="ReceiveMessage('자바스크립트 함수 직접 호출');">JavaScript Alert</button>
+
+        <br /><br />
+        <h3>WebView Input 네이티브로 보내기</h3>
+        <button class="btn btn-danger" id="test4" onclick="SendParametersUsingURL('Add')">Add</button>
+        <button class="btn btn-danger" id="test5" onclick="SendParametersUsingURL('Sub')">Sub</button>
+        <button class="btn btn-danger" id="test6" onclick="SendParametersUsingURL('Mul')">Mul</button>
+        <button class="btn btn-danger" id="test7" onclick="SendParametersUsingURL('Div')">Div</button>
+    </div>
+</body>
+</html>
