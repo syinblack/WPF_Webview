@@ -5,6 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfApp1"
         mc:Ignorable="d"
+        ContentRendered="Window_ContentRendered"
+        Closing="Window_Closing"
         Title="MainWindow" Height="1000" Width="1168">
 
     <Grid Background="Black">
@@ -25,10 +27,10 @@
                         MinWidth="1000" VerticalAlignment="Top"
                          Background="AliceBlue"/>
 
-                <Button x:Name="GoButton" Content="Go" Width="50" Height="25"
+                <Button x:Name="SearchButton" Content="Go" Width="50" Height="25"
                         VerticalAlignment="Top"
                         Background="#FF79ABD6" 
-                        Click="GoButton_Click"/>
+                        Click="SearchButton_Click"/>
             </StackPanel>
             <!-- 주소창 End -->
 
@@ -59,9 +61,9 @@
 
         <TextBlock Text="버튼을 눌러 webview의 계산기에게 입력값을 전달합니다." 
             HorizontalAlignment="Left" Margin="34,236,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
-        <Button x:Name="TransferDataToWebviewButton"
+        <Button x:Name="CalculateButton"
                 Content="계산 버튼" Margin="254,257,824,673"
-                Click="TransferDataToWebviewButton_Click"/>
+                Click="CalculateButton_Click"/>
 
         <ComboBox x:Name="Cal_ComboBox" Margin="34,262,1045,673" SelectedIndex="0">
             <ComboBoxItem Content="Add"/>

@@ -56,9 +56,7 @@
 
         // ChangeURL function must be called when you change url from javascript.
         function ChangeURL(url) {
-            // 네이티브에게 '자바스크립트에서 url 변경할게'라고 알린 뒤 url 변경 -> 네이티브에서 url 변경 이벤트 핸들러를 등록시키게 됨.
-            window.external.UrlChangingFromJavaScript();
-            window.location = url;
+            window.external.UrlChangingFromJavaScript(url);
         }
     </script>
 </head>
