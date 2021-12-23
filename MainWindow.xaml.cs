@@ -1,95 +1,103 @@
 ﻿using System.Windows;
 using System.Security.Permissions;
 using System.Runtime.InteropServices;
-using MeditationExtension;              // made by meditation
+using MeditationWebBrowser;              // made by meditation
 using System.Collections.Generic;
+using System.Windows.Navigation;
 
+// 네이티브(WPF) 환경에서 웹뷰(html)를 구현하고, 양방 통신 핸들링을 최종 목적으로 한다.
+// {xaml, C#(이하 cs)} 와 {html, JavaScript(이하 js)}간 양방향 통신으로 함수를 구현해보는 실습
+// 네이티브 C#은 메소드, JavaScipt는 함수로 구분한다.
 namespace WpfApp1
 {
     [PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
     [ComVisible(true)]
     public partial class MainWindow : Window
     {
+        MyWeb wb;
+
         public MainWindow()
         {
             InitializeComponent();
 
-            _WebBrowser.ObjectForScripting = this;
-            _WebBrowser.Navigated += _WebBrowser_Navigated;
-            _WebBrowser.Navigate($"https://www.naver.com");
+            // MyWeb 인스턴스를 생성하여 웹뷰 핸들링
+            wb = new MyWeb(_WebBrowser);
+            // 스크립트 웹뷰에 연결
+            wb.InitializeWebBrowser(this);
+            // 웹뷰에 이벤트핸들러 등록 Q: wb.메소드로 수정가능한 지 확인
+            _WebBrowser.Navigating += _WebBrowser_Navigating;
         }
 
-        // 네이티브(WPF) 환경에서 웹뷰(html)를 구현하고, 양방 통신 핸들링을 최종 목적으로 한다.
-        // {xaml, C#(이하 cs)} 와 {html, JavaScript(이하 js)}간 양방향 통신으로 함수를 구현해보는 실습
-        // 네이티브 C#은 메소드, JavaScipt는 함수로 구분한다.
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_WebBrowser.CanGoBack)
-            {
-                _WebBrowser.GoBack();
-            }
+            wb.GoBack();
         }
         
-        private void GoButton_Click(object sender, RoutedEventArgs e)
+        private void SearchButton_Click(object sender, RoutedEventArgs e)
         {
-            _WebBrowser.Navigate(addressBar.Text);
+            wb.Navigate(addressBar.Text);
         }
 
         private void JavaScriptButton_Click(object sender, RoutedEventArgs e)
         {
-            string source = @"file:///C:\Users\NHN\source\repos\WpfApp1\page1.html";
-
-            _WebBrowser.Navigate(@$"{source}");
+            wb.GoJavaScript();
         }
 
         private void WhatTime_Click(object sender, RoutedEventArgs e)
         {
-            if (_WebBrowser.Source.ToString() == "file:///C:/Users/NHN/source/repos/WpfApp1/page1.html")
-            {
-                // WebBrowser 컨트롤에 연결된 JavaScript 함수를 실행한다.
-                _ = _WebBrowser.InvokeScript("WhatTimeIsItNow");
-            }
-            else
-            {
-                MessageBox.Show("There's no HTML.");
-            }
+            wb.GetCurrentTime();
         }
 
         // 웹뷰가 전달한 메시지 표시 (해당 메소드는 웹뷰가 호출)
         public void MessageFromJavaScript(string msg)
         {
-            _ = MessageBox.Show($"Native Message : {msg}");
+            wb.ShowMessageBox(msg);
         }
         
         // 웹뷰의 함수를 호출하여 네이티브의 인자를 전달한다.
-        private void TransferDataToWebviewButton_Click(object sender, RoutedEventArgs e)
+        private void CalculateButton_Click(object sender, RoutedEventArgs e)
         {
-            object res = _WebBrowser.CalculateInputs(Cal_ComboBox.SelectedIndex, NativeTextBox1.Text, NativeTextBox2.Text);
-
+            object res = wb.CalculateInputs(Cal_ComboBox.SelectedIndex, NativeTextBox1.Text, NativeTextBox2.Text);
             NativeTextBox3.Text = res.ToString();
         }
 
         // 웹뷰에서 url 변경하기 전에 이벤트 핸들러 등록
-        // _WebBrowser_Navigating 이벤트 핸들러는 웹뷰에서 url 변경하기 전에만 추가되고, 나머지 경우에는 제거된 상태로 있어야 함.
-        public void UrlChangingFromJavaScript()
+        // _WebBrowser_Navigating 이벤트 핸들러는 웹뷰에서 url 변경하기 전에만 추가되고, 나머지 경우에는 제거된 상태로 있는다.
+        public void UrlChangingFromJavaScript(string url)
         {
-            _WebBrowser.Navigating += _WebBrowser_Navigating; // url 파싱 이벤트 핸들러
+            wb.Navigate(url);
         }
 
         // 웹뷰로부터 url 변경 신호를 받으면 (url 변경전에) 파싱한다.
         // url scheme : {protocol}:{host}?{op=}?{param1=}?{param2=}
-        private void _WebBrowser_Navigating(object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
+        public void _WebBrowser_Navigating(object sender, NavigatingCancelEventArgs e)
         {
-            // ParseURL: url을 파싱하여 {protocol, host, cmd, param1, param2} 순으로 반환
-            List<string> URLResources = WebBrowserExtension.ParseURL(e.Uri.ToString());
+            wb.ParseURLBeforeNavigation(e, out string cmd, out List<object> list);
 
-            _WebBrowser.FillParsedResourceInControls(URLResources, Cal_ComboBox, NativeTextBox1, NativeTextBox2);
+            if (cmd == "Calculate")
+            {
+                Cal_ComboBox.SelectedIndex = (int)list[0];
+                NativeTextBox1.Text = (string)list[1];
+                NativeTextBox2.Text = (string)list[2];
+            }
+            else if (cmd == "Navigate")
+            {
+                return;
+            }
+            else
+            {
+                _ = MessageBox.Show("Error : Failed to parse URL");
+            }
         }
 
-        // url에 의해 페이지가 로드된 후 _WebBrowser_Navigating가 등록되어 있다면 제거한다.
-        private void _WebBrowser_Navigated(object sender, System.Windows.Navigation.NavigationEventArgs e)
+        private void Window_ContentRendered(object sender, System.EventArgs e)
         {
-            _WebBrowser.Navigating -= _WebBrowser_Navigating;
+            wb.Navigate($"https://www.toast.com");
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            wb.Closing(e);
         }
     }
 }
